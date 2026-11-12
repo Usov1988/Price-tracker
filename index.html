@@ -36,7 +36,6 @@
             color: #8b949e;
             margin-bottom: 15px;
         }
-        /* Панель управления */
         .control-panel {
             display: flex;
             flex-wrap: wrap;
@@ -57,9 +56,6 @@
             font-size: 14px;
             outline: none;
         }
-        select:focus, button:focus {
-            border-color: #58a6ff;
-        }
         button {
             background: #238636;
             color: #fff;
@@ -70,13 +66,21 @@
         button:hover {
             background: #2ea043;
         }
+        .btn-reset {
+            background: #da3633;
+            border-color: #f85149;
+            font-size: 12px;
+            padding: 6px 8px;
+        }
+        .btn-reset:hover {
+            background: #b62324;
+        }
         #parserStatus {
             font-size: 13px;
             color: #8b949e;
             width: 100%;
             margin-top: 5px;
         }
-        /* Таблица */
         .table-responsive {
             width: 100%;
             overflow-x: auto;
@@ -119,7 +123,6 @@
         <h1>🔍 Монитор аномальных цен</h1>
         <div class="subtitle">Автоматическое сравнение цен 21vek с каталогом Onliner</div>
 
-        <!-- Панель управления с сайта -->
         <div class="control-panel">
             <label for="categorySelect">Категория:</label>
             <select id="categorySelect">
@@ -129,10 +132,10 @@
                 <option value="laptops">Ноутбуки</option>
             </select>
             <button onclick="triggerParser()">Запустить парсинг</button>
+            <button class="btn-reset" onclick="resetToken()" title="Сбросить сохраненный токен">Сбросить токен</button>
             <div id="parserStatus"></div>
         </div>
 
-        <!-- Таблица результатов -->
         <div class="table-responsive">
             <table>
                 <thead>
@@ -155,7 +158,6 @@
 </div>
 
 <script>
-    // Загрузка и отрисовка данных из prices.json при открытии сайта
     async function loadPrices() {
         try {
             const response = await fetch('prices.json?' + new Date().getTime());
@@ -189,16 +191,21 @@
         }
     }
 
-    // Функция запуска GitHub Actions прямо с сайта
+    function resetToken() {
+        localStorage.removeItem('gh_token');
+        document.getElementById('parserStatus').innerText = "Токен успешно сброшен. Нажмите «Запустить парсинг» для ввода нового.";
+    }
+
     async function triggerParser() {
         const category = document.getElementById('categorySelect').value;
         const statusText = document.getElementById('parserStatus');
         
         let token = localStorage.getItem('gh_token');
         if (!token) {
-            token = prompt("Введите GitHub Personal Access Token (нужен с правом repo/workflow для запуска из браузера):");
+            token = prompt("Введите новый Fine-grained токен GitHub (начинается с github_pat_...):");
             if (token) {
                 localStorage.setItem('gh_token', token.trim());
+                token = token.trim();
             } else {
                 statusText.innerText = "Ошибка: требуется токен для доступа к API GitHub.";
                 return;
@@ -214,7 +221,7 @@
             const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/actions/workflows/checker.yml/dispatches`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `token ${token}`,
+                    'Authorization': `Bearer ${token}`,
                     'Accept': 'application/vnd.github+json',
                     'Content-Type': 'application/json'
                 },
@@ -226,9 +233,9 @@
 
             if (response.status === 204) {
                 statusText.innerText = "✅ Парсер запущен! Данные обновятся на странице через 20–30 секунд.";
-                setTimeout(loadPrices, 15000); // Автообновление таблицы через 15 сек
+                setTimeout(loadPrices, 15000);
             } else {
-                statusText.innerText = "❌ Ошибка запуска. Токен недействителен или у него нет прав.";
+                statusText.innerText = "❌ Ошибка запуска. Проверьте права Actions (Read and write) у токена.";
                 localStorage.removeItem('gh_token');
             }
         } catch (error) {
@@ -236,7 +243,6 @@
         }
     }
 
-    // Загружаем данные при старте страницы
     loadPrices();
 </script>
 
