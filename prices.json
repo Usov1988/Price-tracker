@@ -1,5 +1,13 @@
 [
     {
+        "title": "🔴 Смартфон (Сканирование идет, аномалий не найдено)",
+        "store_price": 0.0,
+        "market_price": 0.0,
+        "store_url": "https://www.21vek.by/smartphones/",
+        "catalog_url": "https://catalog.onliner.by",
+        "date": "2026-11-12 16:37"
+    },
+    {
         "title": "Пример: Смартфон (Аномальная цена)",
         "store_price": 500,
         "market_price": 1200,
