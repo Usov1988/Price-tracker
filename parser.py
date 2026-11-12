@@ -2,10 +2,7 @@ import json
 from bs4 import BeautifulSoup
 import cloudscraper
 
-# Создаем скрапер, который умеет обходить Cloudflare на 21vek.by
 scraper = cloudscraper.create_scraper()
-
-# Ссылка на категорию смартфонов (или конкретный товар для теста) на 21vek.by
 url = "https://www.21vek.by/mobile/"
 
 print(f"Запрос к сайту: {url}")
@@ -16,23 +13,27 @@ data_to_save = []
 if response.status_code == 200:
     soup = BeautifulSoup(response.text, 'html.parser')
     
-    # Ищем карточки товаров (структура селекторов может зависеть от верстки каталога 21vek)
-    # Ниже универсальный пример поиска блоков товаров
-    items = soup.find_all('div', class_='g-card') # или актуальный класс карточки товара
-    
+    # Ищем карточки товаров по основным тегам и классам 21vek
+    items = soup.find_all('li', class_='g-card')
     if not items:
-        # Резервный поиск по тегам, если класс изменился
-        items = soup.select('.result__item')
+        items = soup.select('div[class*="card"]')
 
-    for item in items[:10]: # Берем первые 10 товаров для примера
+    for item in items[:10]: # Первые 10 товаров
         try:
-            # Название товара
-            title_elem = item.find('span', {'data-testid': 'name'}) or item.find('a', class_='g-card-image')
-            title = title_elem.get_text(strip=True) if title_elem else "Смартфон"
+            # Название товара (пробуем разные варианты селекторов)
+            title_elem = item.find('span', {'data-testid': 'name'}) or item.find('a', class_='g-card-image') or item.find('img')
+            title = ""
+            if title_elem:
+                title = title_elem.get('alt') or title_elem.get_text(strip=True)
             
-            # Цена
-            price_elem = item.find('span', class_='g-price-current') or item.find('div', class_='price__current')
-            price = price_elem.get_text(strip=True) if price_elem else "Цена не найдена"
+            if not title:
+                # Если в теге изображения или ссылки пусто, ищем текстовый заголовок
+                title_tag = item.find(['span', 'a'], class_=lambda x: x and 'name' in x)
+                title = title_tag.get_text(strip=True) if title_tag else ""
+
+            # Цена товара
+            price_elem = item.find('span', class_='g-price-current') or item.find('p', class_='g-price') or item.find('span', class_='price__value')
+            price = price_elem.get_text(strip=True) if price_elem else ""
             
             if title and price:
                 data_to_save.append({
@@ -42,16 +43,14 @@ if response.status_code == 200:
         except Exception as e:
             continue
 
-# Если по какой-то причине селекторы на сайте не отдали товары (например, защита выдала капчу),
-# чтобы файл не был пустым или со старым примером, зафиксируем статус или запишем актуальную попытку
+# Если по какой-то причине элементы не распарсились, сохраним детальный отчет
 if not data_to_save:
-    # Записываем структуру с актуальным статусом проверки
-    data_to_save = [
-        {"title": "Проверка связи с 21vek.by", "price": f"Статус ответа: {response.status_code}"}
-    ]
+    data_to_save.append({
+        "title": "Связь есть (200), но селекторы не нашли товары",
+        "price": "Нужна корректировка класса"
+    })
 
-# Сохраняем результат в prices.json
 with open('prices.json', 'w', encoding='utf-8') as f:
     json.dump(data_to_save, f, ensure_ascii=False, indent=4)
 
-print("Парсинг завершен, файл prices.json обновлен.")
+print("Парсинг завершен.")
