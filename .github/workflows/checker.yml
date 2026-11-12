@@ -4,6 +4,17 @@ on:
   schedule:
     - cron: '0 */2 * * *'
   workflow_dispatch:
+    inputs:
+      category:
+        description: 'Выберите категорию 21vek'
+        required: true
+        default: 'mobile'
+        type: choice
+        options:
+          - mobile
+          - televisions
+          - refrigerators
+          - laptops
 
 jobs:
   run-parser:
@@ -27,6 +38,8 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run script
+        env:
+          CATEGORY: ${{ github.event.inputs.category }}
         run: python parser.py
 
       - name: Auto commit changes
