@@ -36,50 +36,21 @@
             color: #8b949e;
             margin-bottom: 15px;
         }
-        .control-panel {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            align-items: center;
+        .info-box {
             background: #21262d;
             padding: 12px;
             border-radius: 6px;
             margin-bottom: 20px;
             border: 1px solid #30363d;
-        }
-        select, button {
-            padding: 6px 12px;
-            background: #30363d;
-            color: #c9d1d9;
-            border: 1px solid #484f58;
-            border-radius: 6px;
             font-size: 14px;
-            outline: none;
-        }
-        button {
-            background: #238636;
-            color: #fff;
-            border-color: #2ea043;
-            cursor: pointer;
-            font-weight: 500;
-        }
-        button:hover {
-            background: #2ea043;
-        }
-        .btn-reset {
-            background: #da3633;
-            border-color: #f85149;
-            font-size: 12px;
-            padding: 6px 8px;
-        }
-        .btn-reset:hover {
-            background: #b62324;
-        }
-        #parserStatus {
-            font-size: 13px;
             color: #8b949e;
-            width: 100%;
-            margin-top: 5px;
+        }
+        .info-box a {
+            color: #58a6ff;
+            text-decoration: none;
+        }
+        .info-box a:hover {
+            text-decoration: underline;
         }
         .table-responsive {
             width: 100%;
@@ -123,19 +94,12 @@
         <h1>🔍 Монитор аномальных цен</h1>
         <div class="subtitle">Автоматическое сравнение цен 21vek с каталогом Onliner</div>
 
-        <div class="control-panel">
-            <label for="categorySelect">Категория:</label>
-            <select id="categorySelect">
-                <option value="mobile">Смартфоны</option>
-                <option value="televisions">Телевизоры</option>
-                <option value="refrigerators">Холодильники</option>
-                <option value="laptops">Ноутбуки</option>
-            </select>
-            <button onclick="triggerParser()">Запустить парсинг</button>
-            <button class="btn-reset" onclick="resetToken()" title="Сбросить сохраненный токен">Сбросить токен</button>
-            <div id="parserStatus"></div>
+        <!-- Подсказка для запуска с телефона -->
+        <div class="info-box">
+            ⚡ Чтобы запустить парсинг определенной категории, зайдите во вкладку <a href="https://github.com/Usov1988/Price-tracker/actions" target="_blank">Actions в репозитории</a>, выберите <b>Price Checker Bot</b> и нажмите <b>Run workflow</b>.
         </div>
 
+        <!-- Таблица результатов -->
         <div class="table-responsive">
             <table>
                 <thead>
@@ -188,58 +152,6 @@
             });
         } catch (error) {
             document.getElementById('priceTableBody').innerHTML = '<tr><td colspan="5" style="text-align: center; color: #f85149;">Ошибка загрузки prices.json</td></tr>';
-        }
-    }
-
-    function resetToken() {
-        localStorage.removeItem('gh_token');
-        document.getElementById('parserStatus').innerText = "Токен успешно сброшен. Нажмите «Запустить парсинг» для ввода нового.";
-    }
-
-    async function triggerParser() {
-        const category = document.getElementById('categorySelect').value;
-        const statusText = document.getElementById('parserStatus');
-        
-        let token = localStorage.getItem('gh_token');
-        if (!token) {
-            token = prompt("Введите новый Fine-grained токен GitHub (начинается с github_pat_...):");
-            if (token) {
-                localStorage.setItem('gh_token', token.trim());
-                token = token.trim();
-            } else {
-                statusText.innerText = "Ошибка: требуется токен для доступа к API GitHub.";
-                return;
-            }
-        }
-
-        statusText.innerText = "Отправка запроса на запуск...";
-
-        const owner = "Usov1988";
-        const repo = "Price-tracker";
-
-        try {
-            const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/actions/workflows/checker.yml/dispatches`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/vnd.github+json',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    ref: 'main',
-                    inputs: { category: category }
-                })
-            });
-
-            if (response.status === 204) {
-                statusText.innerText = "✅ Парсер запущен! Данные обновятся на странице через 20–30 секунд.";
-                setTimeout(loadPrices, 15000);
-            } else {
-                statusText.innerText = "❌ Ошибка запуска. Проверьте права Actions (Read and write) у токена.";
-                localStorage.removeItem('gh_token');
-            }
-        } catch (error) {
-            statusText.innerText = "❌ Ошибка сети при обращении к GitHub API.";
         }
     }
 
